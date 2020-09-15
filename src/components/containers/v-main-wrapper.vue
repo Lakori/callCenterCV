@@ -1,5 +1,6 @@
 <template>
-    <div class="v-main-wrapper">
+    <div class="v-main-wrapper" v-if="logged">
+       <b-button class="logout" @click="logout" variant="outline-primary">Вихід</b-button>
       <div class="v-main-wrapper__block">
           <router-view />
       </div>
@@ -25,7 +26,7 @@ export default {
 
       let conditions = encodeURIComponent(
         JSON.stringify({
-          name: 'admin',
+          name: 'call centre',
         })
       );
       let roles = await this.$axios.get(`/roles?conditions=${conditions}`);
@@ -41,6 +42,17 @@ export default {
       this.$router.push({ path: '/login' });
       this.logged = false;
     }
+  },
+  methods: {
+    async logout() {
+      try {
+        await this.$axios.get('/account/signout');
+        this.$axios.defaults.headers.common['x-access-token'] = null;
+        this.$router.push({ path: '/login' });
+      } catch (err) {
+        console.log(err);
+      }
+    },
   },
 };
 </script>

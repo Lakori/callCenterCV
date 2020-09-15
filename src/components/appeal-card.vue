@@ -14,7 +14,7 @@
                 >
                 <b-card-text>
                     <h5>{{item.voterSurname}} {{item.voterName}} {{item.voterPhone}}</h5><br/>
-                    <h6><b>Адресат політик:</b> {{item.politicianSurname || 'не'}} {{item.politicianName || 'знайдено'}}</h6>
+                    <h6><b>Адресат політик:</b> {{item.politicianName || 'не знайдено'}}</h6>
                     <h6><b>Адресат партія:</b>{{item.party || 'не знайдено'}}</h6>
                     <b>Текст звернення :</b><br/>{{item.contentPart}}<br/>
                 </b-card-text>
@@ -29,10 +29,18 @@ export default {
     return {
       mainAppeals: [],
       loader: false,
+      politicianReduced: [],
+      partiesReduced: [],
     };
   },
   props: {
     appeals: {
+      type: Array,
+      default() {
+        [];
+      },
+    },
+    politicianArr: {
       type: Array,
       default() {
         [];
@@ -44,6 +52,12 @@ export default {
         1;
       },
     },
+    partiesArr: {
+      type: Array,
+      default() {
+        [];
+      },
+    },
   },
   watch: {
     async currentPage() {
@@ -51,6 +65,12 @@ export default {
     },
   },
   async created() {
+    this.politicianReduced = this.politicianArr.reduce((acc, current) => {
+      acc[current.deputyId] = `${current.fullName.surname} ${
+        current.fullName.name
+      }`;
+      return acc;
+    }, {});
     await this.getAllInfo();
   },
   methods: {
@@ -60,18 +80,22 @@ export default {
         this.loader = true;
         for (let i = 0; i <= this.appeals.length - 1; i++) {
           let infoVoter = await this.findVoter(this.appeals[i].voterId);
+
           if (this.appeals[i].politicalPartyId) {
-            let infoParty = await this.findParty(
-              this.appeals[i].politicalPartyId
-            );
-            this.appeals[i].party = infoParty.name;
+            this.partiesArr.forEach(item => {
+              this.appeals[i].politicalPartyId === item.politicalPartyId
+                ? (this.appeals[i].party = item.name)
+                : null;
+            });
           }
           if (this.appeals[i].deputyId) {
-            let infoPolitician = await this.findPolitician(
-              this.appeals[i].deputyId
-            );
-            this.appeals[i].politicianName = infoPolitician.name;
-            this.appeals[i].politicianSurname = infoPolitician.surname;
+            this.politicianArr.forEach(item => {
+              this.appeals[i].deputyId === item.deputyId
+                ? (this.appeals[i].politicianName = `${item.fullName.surname} ${
+                    item.fullName.name
+                  }`)
+                : null;
+            });
           }
 
           this.appeals[i].voterSurname = infoVoter.surname;
@@ -88,31 +112,6 @@ export default {
           this.mainAppeals.push(this.appeals[i]);
         }
         this.loader = false;
-        // await this.appeals.forEach(async item => {
-        //   let infoVoter = await this.findVoter(item.voterId);
-        //   if (item.politicalPartyId) {
-        //     let infoParty = await this.findParty(item.politicalPartyId);
-        //     item.party = infoParty.name;
-        //   }
-        //   if (item.deputyId) {
-        //     let infoPolitician = await this.findPolitician(item.deputyId);
-        //     item.politicianName = infoPolitician.name;
-        //     item.politicianSurname = infoPolitician.surname;
-        //   }
-
-        //   item.voterSurname = infoVoter.surname;
-        //   item.voterName = infoVoter.name;
-        //   item.voterPhone = infoVoter.phone;
-
-        //   item.contentPart = item.content
-        //     .split('')
-        //     .splice(0, 160)
-        //     .join('');
-        //   if (item.contentPart.length == 160) {
-        //     item.contentPart = `${item.contentPart} ...`;
-        //   }
-        //   this.mainAppeals.push(item);
-        // });
       } catch (err) {
         console.log(err);
       }
@@ -122,33 +121,11 @@ export default {
         let data = await this.$axios.get(`/voters/${id}`);
         return {
           surname: data.data.fullName.surname || 'без фамилии',
-          name: data.data.fullName.name || 'без имени',
+          name: data.data.fullName.name || '',
           phone: data.data.phone,
         };
       } catch (err) {
         console.log('nne');
-        throw new Error(err);
-      }
-    },
-    async findPolitician(id) {
-      try {
-        let data = await this.$axios.get(`/deputies/${id}`);
-
-        return {
-          surname: data.data.fullName.surname,
-          name: data.data.fullName.name,
-        };
-      } catch (err) {
-        throw new Error(err);
-      }
-    },
-    async findParty(id) {
-      try {
-        let data = await this.$axios.get(`/political-parties/${id}`);
-        return {
-          name: data.data.name,
-        };
-      } catch (err) {
         throw new Error(err);
       }
     },

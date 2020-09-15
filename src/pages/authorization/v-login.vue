@@ -17,24 +17,6 @@
           placeholder="Введіть телефон"
         ></b-form-input>
       </b-form-group>
-
-      <b-button v-if="!value" class="main-size" @click="checkPhone" variant="primary">Надіслати смс</b-button>
-
-  <div v-if="value">
-      <b-form-group
-        label="Код з СМС"
-        label-for="smsCode"
-        >
-        <b-form-input
-        class="main-size"
-          id="smsCode"
-          v-model="smsCode"
-          type="text"
-          required
-          placeholder="Введіть код з смс"
-        ></b-form-input>
-      </b-form-group>
-
       <b-form-group
         label="Пароль:"
         label-for="password"
@@ -51,7 +33,6 @@
 
 
       <b-button class="main-size" @click="checkPassword" variant="primary">Увійти</b-button>
-  </div>
 
       <div style="color:red" v-if="wrong">Невірний номер</div>
       <div style="color:red" v-if="wrongPass">Невірний код або пароль</div>
@@ -73,25 +54,18 @@ export default {
     };
   },
   methods: {
-    async checkPhone(e) {
+    reset() {
+      this.name = '';
+      this.password = '';
+    },
+    async checkPassword(e) {
       try {
         e.preventDefault();
         this.wrong = false;
         let ident = await this.$axios.post('/account/identification', {
           phone: this.phone,
         });
-        this.value = ident.data.token.value;
-      } catch (err) {
-        this.wrong = true;
-      }
-    },
-    reset() {
-      this.name = '';
-      this.password = '';
-      this.smsCode = '';
-    },
-    async checkPassword() {
-      try {
+        let value = ident.data.token.value;
         let pass = await this.$axios.post(
           '/account/authentication',
           {
@@ -100,7 +74,7 @@ export default {
           },
           {
             headers: {
-              'x-access-token': this.value,
+              'x-access-token': value,
             },
           }
         );

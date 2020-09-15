@@ -15,34 +15,18 @@
                       <datalist id="my-list-id">
                         <option v-for="deputy in politicians" :key="deputy.id" >{{ deputy.fullName.surname }} {{deputy.fullName.name}}</option>
                       </datalist>
-                    <!-- <b-form-group class="item">
-                        <b-form-input
-                            class="main-size"
-                            id="surname"
-                            v-model="surname"
-                            type="text"
-                            placeholder="Введіть фамілію політика"
-                        ></b-form-input>
-                    </b-form-group> -->
-                    <!-- <b-form-group class="item">
-                        <b-form-input
-                            class="main-size"
-                            id="name"
-                            v-model="name"
-                            type="text"
-                            placeholder="Введіть ім'я політика"
-                        ></b-form-input>
-                    </b-form-group> -->
                 </div>
                 <div v-if="noPolitician" class="noPolitician">Політика не знайдено</div>
+                <br/>
                 <div class="date">
                     <div class="item">
                         <div>
-                            <label for="example-datepicker">Оберіть дати для пошука:</label>
-                            <b-form-datepicker placeholder="Дата початок пошука" id="example-datepicker" v-model="fromDate" class="mb-2"></b-form-datepicker>
+                            <label>Оберіть дати для пошука:</label>
+                            <b-form-datepicker placeholder="Дата початок пошука" id="example-datepicker1" v-model="fromDate" class="mb-2"></b-form-datepicker>
                         </div>
+                        <br/>
                         <div>
-                            <b-form-datepicker placeholder="Дата кінець пошука" id="example-datepicker" v-model="toDate" class="mb-2"></b-form-datepicker>
+                            <b-form-datepicker placeholder="Дата кінець пошука" id="example-datepicker2" v-model="toDate" class="mb-2"></b-form-datepicker>
                         </div>
                         <div style="color:red" v-if="noDates">За ці дати не знайдено звернень</div>
                     </div>   
@@ -53,7 +37,8 @@
 
                <b-button variant="outline-primary" type="submit">Показати звернення</b-button>
             </form>
-            
+            <br/>
+            <h5 v-if="noMatches" style="color:red">Не знайдено жодного звернення</h5>
         </div>
         <br/>
         <div style="width:100%;" v-if="appeals.length">
@@ -69,7 +54,7 @@
               aria-controls="my-table"
               style="justify-content:center; margin-bottom:20px"
             ></b-pagination>
-            <appeal-card   :currentPage="newPage" :appeals="appeals"/>
+            <appeal-card   :partiesArr="parties" :politicianArr="politicians" :currentPage="newPage" :appeals="appeals"/>
         </div>
         
     </div>
@@ -82,6 +67,7 @@ export default {
     return {
       surname: '',
       politicians: [],
+      parties: [],
       noPolitician: false,
       name: '',
       fromDate: null,
@@ -93,6 +79,7 @@ export default {
       perPage: 10,
       rows: null,
       newPage: null,
+      noMatches: false,
     };
   },
   components: {
@@ -107,6 +94,7 @@ export default {
   },
   async created() {
     await this.getAllPolitician();
+    await this.getAllParties();
   },
   methods: {
     async getAllPolitician() {
@@ -114,6 +102,15 @@ export default {
         this.parties = [];
         let data = await this.$axios.get('/deputies');
         this.politicians = data.data.page.data;
+      } catch (err) {
+        console.log(err);
+      }
+    },
+    async getAllParties() {
+      try {
+        this.parties = [];
+        let data = await this.$axios.get('/political-parties');
+        this.parties = data.data.page.data;
       } catch (err) {
         console.log(err);
       }
@@ -138,6 +135,7 @@ export default {
     async searchByDate(id) {
       try {
         let conditionObj = {};
+        this.noMatches = false;
         let options = encodeURIComponent(
           JSON.stringify({
             page: {
@@ -152,16 +150,15 @@ export default {
             $lte: this.toDate,
           };
         }
-        if (id && id !== 'політика не знайдено') {
+        if (id) {
           conditionObj.deputyId = id;
-        } else if (id === 'політика не знайдено') {
-          return (this.noPolitician = true);
         }
         let conditions = encodeURIComponent(JSON.stringify(conditionObj));
         let data = await this.$axios.get(
           `/appeals?conditions=${conditions}&options=${options}`
         );
         this.rows = data.data.totalItems;
+        this.noMatches = data.data.totalItems > 0 ? false : true;
         return data.data.page.data;
       } catch (err) {
         console.log(err);
@@ -180,7 +177,6 @@ export default {
             })
           );
           let data = await this.$axios.get(`deputies?conditions=${conditions}`);
-          console.log(data.data.page.data);
           return data.data.page.data[0].deputyId;
         }
       } catch (err) {
