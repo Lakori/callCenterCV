@@ -1,4 +1,4 @@
-# admPryama
+# call-center
 
 ## Project setup
 ```

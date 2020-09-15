@@ -5,7 +5,7 @@ import vMainWrapper from '@/components/containers/v-main-wrapper';
 
 //Login 
 
-import vLogin from '@/components/authorization/v-login';
+import vLogin from '@/pages/authorization/v-login';
 
 
 //Pages
