@@ -3,12 +3,16 @@ import App from "./App.vue";
 import router from "./router";
 import store from "./store";
 import './assets/styles/styles.scss';
+import "vue-select/dist/vue-select.css";
 import 'material-design-icons-iconfont';
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue';
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
 import axios from 'axios';
 import { baseUrl } from './configAnalizer/urlConfig.js'
+import vSelect from "vue-select";
+
+
 
 import VueSweetalert2 from 'vue-sweetalert2';
 
@@ -16,7 +20,7 @@ import VueSweetalert2 from 'vue-sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import VueMask from 'v-mask'
 Vue.use(VueMask);
-
+Vue.component("v-select", vSelect);
 Vue.use(VueSweetalert2);
 
 Vue.prototype.$axios = axios.create({

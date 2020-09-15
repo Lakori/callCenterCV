@@ -8,9 +8,14 @@
                 <h3>Введить дані для пошуку </h3>
                 <br/>
                 <label>Введіть фамілію політика для пошука:</label>
+                
                 <div  class="center__container">
-                    
-                    <b-form-group class="item">
+                    <b-form-input list="my-list-id" class="item" v-model="surname"></b-form-input>
+
+                      <datalist id="my-list-id">
+                        <option v-for="deputy in politicians" :key="deputy.id" >{{ deputy.fullName.surname }} {{deputy.fullName.name}}</option>
+                      </datalist>
+                    <!-- <b-form-group class="item">
                         <b-form-input
                             class="main-size"
                             id="surname"
@@ -18,7 +23,7 @@
                             type="text"
                             placeholder="Введіть фамілію політика"
                         ></b-form-input>
-                    </b-form-group>
+                    </b-form-group> -->
                     <!-- <b-form-group class="item">
                         <b-form-input
                             class="main-size"
@@ -29,7 +34,7 @@
                         ></b-form-input>
                     </b-form-group> -->
                 </div>
-                <div v-if="noPolitician" style="color:red">Політика не знайдено</div>
+                <div v-if="noPolitician" class="noPolitician">Політика не знайдено</div>
                 <div class="date">
                     <div class="item">
                         <div>
@@ -56,8 +61,15 @@
             <div class="appeals__back"  @click="backToSearch"> <b-icon style="margin-right:5px" icon="backspace-fill"></b-icon>Назад</div>
        
             <b-button  class="downloadAppeals" variant="primary" @click="downloadXlsx">Завантажити звернення</b-button>
-            <h5>Всього звернень: {{appeals.length}}</h5>
-            <appeal-card   :appeals="appeals"/>
+            <h5>Всього звернень: {{this.rows}}</h5><br/>
+            <b-pagination
+              v-model="currentPage"
+              :total-rows="rows"
+              :per-page="perPage"
+              aria-controls="my-table"
+              style="justify-content:center; margin-bottom:20px"
+            ></b-pagination>
+            <appeal-card   :currentPage="newPage" :appeals="appeals"/>
         </div>
         
     </div>
@@ -69,7 +81,7 @@ export default {
   data() {
     return {
       surname: '',
-      politician: [],
+      politicians: [],
       noPolitician: false,
       name: '',
       fromDate: null,
@@ -77,108 +89,129 @@ export default {
       appeals: [],
       noDates: false,
       deputyId: null,
+      currentPage: 1,
+      perPage: 10,
+      rows: null,
+      newPage: null,
     };
   },
   components: {
     appealCard,
   },
+  watch: {
+    async currentPage() {
+      let appealsArr = await this.searchByDate(this.deputyId);
+      this.appeals = appealsArr;
+      this.newPage = this.currentPage;
+    },
+  },
+  async created() {
+    await this.getAllPolitician();
+  },
   methods: {
+    async getAllPolitician() {
+      try {
+        this.parties = [];
+        let data = await this.$axios.get('/deputies');
+        this.politicians = data.data.page.data;
+      } catch (err) {
+        console.log(err);
+      }
+    },
     async search(e) {
       try {
         this.appeals = [];
         e.preventDefault();
         if (this.surname) {
           this.deputyId = await this.searchBySurname();
-        }
-
-        if (this.fromDate && this.toDate && this.deputyId) {
-          let appealsArr = await this.searchByDate(this.deputyId);
-          appealsArr.length
-            ? (this.appeals = appealsArr)
-            : (this.noDates = true);
-        } else if (!this.fromDate && !this.toDate && this.deputyId) {
-          let conditions = encodeURIComponent(
-            JSON.stringify({
-              deputyId: this.deputyId,
-            })
-          );
-          let data = await this.$axios.get(`appeals?conditions=${conditions}`);
-          this.appeals = data.data.page.data;
-        } else if (this.fromDate && this.toDate && !this.deputyId) {
-          let appealsArr = await this.searchByDate();
-          appealsArr.length
-            ? (this.appeals = appealsArr)
-            : (this.noDates = true);
-        }
-      } catch (err) {
-        console.log(err);
-      }
-    },
-    async searchBySurname() {
-      try {
-        let surname = this.surname.split('');
-        surname.splice(0, 1, surname[0].toUpperCase());
-        let surnameStr = surname.join('');
-
-        //try to find politician with only 1st letter to UpperCase
-        let data = await this.searchBySurnameToUpper(false, surnameStr);
-        if (data.length) {
-          //if there in politician with only 1st
-
-          this.noPolitician = false;
-          return data[0].deputyId;
         } else {
-          let data = await this.searchBySurnameToUpper(true, surnameStr);
-          data.length
-            ? ((this.politician = data), (this.noPolitician = false))
-            : (this.noPolitician = true);
-          return data[0].deputyId;
+          this.deputyId = null;
         }
-      } catch (err) {
-        console.log(err);
-      }
-    },
-    async searchBySurnameToUpper(toUp, surnameStr) {
-      try {
-        toUp ? (surnameStr = surnameStr.toUpperCase()) : null;
-        let fullName = {
-          surname: surnameStr,
-        };
-        if (this.name) {
-          fullName.name = this.name;
-        }
-        let conditions = encodeURIComponent(
-          JSON.stringify({
-            fullName,
-          })
-        );
-        let data = await this.$axios.get(`deputies?conditions=${conditions}`);
-        return data.data.page.data;
+
+        let appealsArr = await this.searchByDate(this.deputyId);
+        this.appeals = appealsArr;
+        this.newPage = this.currentPage;
       } catch (err) {
         console.log(err);
       }
     },
     async searchByDate(id) {
       try {
-        let conditionObj = {
-          createdAt: {
+        let conditionObj = {};
+        let options = encodeURIComponent(
+          JSON.stringify({
+            page: {
+              index: this.currentPage - 1,
+              size: this.perPage,
+            },
+          })
+        );
+        if (this.fromDate && this.toDate) {
+          conditionObj.createdAt = {
             $gte: this.fromDate,
             $lte: this.toDate,
-          },
-        };
-        if (id) {
+          };
+        }
+        if (id && id !== 'політика не знайдено') {
           conditionObj.deputyId = id;
+        } else if (id === 'політика не знайдено') {
+          return (this.noPolitician = true);
         }
         let conditions = encodeURIComponent(JSON.stringify(conditionObj));
-        let data = await this.$axios.get(`/appeals?conditions=${conditions}`);
+        let data = await this.$axios.get(
+          `/appeals?conditions=${conditions}&options=${options}`
+        );
+        this.rows = data.data.totalItems;
         return data.data.page.data;
+      } catch (err) {
+        console.log(err);
+      }
+    },
+    async searchBySurname() {
+      try {
+        if (this.surname) {
+          let fullName = this.surname.split(' ');
+          let conditions = encodeURIComponent(
+            JSON.stringify({
+              fullName: {
+                surname: fullName[0],
+                name: fullName[1],
+              },
+            })
+          );
+          let data = await this.$axios.get(`deputies?conditions=${conditions}`);
+          console.log(data.data.page.data);
+          return data.data.page.data[0].deputyId;
+        }
       } catch (err) {
         console.log(err);
       }
     },
     async downloadXlsx() {
       try {
-        console.log(1);
+        let conditionObj = {};
+        if (this.fromDate && this.toDate) {
+          conditionObj.createdAt = {
+            $gte: this.fromDate,
+            $lte: this.toDate,
+          };
+        }
+        if (this.deputyId && this.deputyId !== 'політика не знайдено') {
+          conditionObj.deputyId = this.deputyId;
+        }
+        let conditions = encodeURIComponent(JSON.stringify(conditionObj));
+        let data = await this.$axios.get(
+          `/appeals-xlsx?conditions=${conditions}`,
+          { responseType: 'blob' }
+        );
+        let fileURL = window.URL.createObjectURL(new Blob([data.data]));
+        let fileLink = document.createElement('a');
+
+        fileLink.href = fileURL;
+        fileLink.setAttribute('download', 'file.xlsx');
+        document.body.appendChild(fileLink);
+
+        fileLink.click();
       } catch (err) {
         console.log(err);
       }
@@ -231,5 +264,11 @@ export default {
   display: flex;
   flex-direction: row;
   align-items: center;
+}
+
+.noPolitician {
+  color: red;
+  margin-top: -10px;
+  margin-bottom: 10px;
 }
 </style>
