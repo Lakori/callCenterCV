@@ -2,7 +2,7 @@
     <div class="appeals">
       <div v-if="loader" class="appeal__load"><b-icon icon="three-dots" animation="cylon" font-scale="4"></b-icon></div>
         <b-card-group v-else deck  
-            v-for="item in mainAppeals"
+            v-for="(item, index) in mainAppeals"
             :key="item.id"
             class="appeals-card">
             <b-card
@@ -16,7 +16,15 @@
                     <h5>{{item.voterSurname}} {{item.voterName}} {{item.voterPhone}}</h5><br/>
                     <h6><b>Адресат політик:</b> {{item.politicianName || 'не знайдено'}}</h6>
                     <h6><b>Адресат партія:</b>{{item.party || 'не знайдено'}}</h6>
-                    <b>Текст звернення :</b><br/>{{item.contentPart}}<br/>
+                    <b>Текст звернення :</b><br/>
+                    <div v-if="!(check === index)"> {{item.contentPart}}
+                      <b class="more" @click="check = index" v-if="item.contentPart.length == 160">...</b>
+                    </div>
+                    <div v-else> {{item.content}}</div>
+                    <div class="img__container" v-if="item.image">
+                      <img :src="item.image">
+                      <b-button variant="primary" @click.prevent="downloadImg(item.appealId)" class="img__download">Завантажити зображення</b-button>
+                    </div>
                 </b-card-text>
             </b-card>
         </b-card-group>
@@ -31,6 +39,9 @@ export default {
       loader: false,
       politicianReduced: [],
       partiesReduced: [],
+      fullInfo: false,
+      check: null,
+      bigImg: false,
     };
   },
   props: {
@@ -74,6 +85,18 @@ export default {
     await this.getAllInfo();
   },
   methods: {
+    async downloadImg(id) {
+      try {
+        let data = await this.$axios.get(`/appeals/${id}`);
+        let link = document.createElement('a');
+        link.target = '_blank';
+        link.download = 'img.jpg';
+        link.href = `${data.data.image}`;
+        link.click();
+      } catch (err) {
+        console.log(err);
+      }
+    },
     async getAllInfo() {
       try {
         this.mainAppeals = [];
@@ -106,9 +129,7 @@ export default {
             .split('')
             .splice(0, 160)
             .join('');
-          if (this.appeals[i].contentPart.length == 160) {
-            this.appeals[i].contentPart = `${this.appeals[i].contentPart} ...`;
-          }
+
           this.mainAppeals.push(this.appeals[i]);
         }
         this.loader = false;
@@ -147,10 +168,32 @@ export default {
   }
 }
 
+.img__container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  img {
+    max-width: 30%;
+    max-height: 150px;
+  }
+
+  .img__download {
+    height: 60px;
+    width: 150px;
+    margin-right: 0;
+    margin-left: auto;
+  }
+}
+
 .appeal__load {
   width: 100%;
   display: flex;
   justify-content: center;
+}
+
+.more {
+  color: blue;
+  cursor: pointer;
 }
 </style>
 

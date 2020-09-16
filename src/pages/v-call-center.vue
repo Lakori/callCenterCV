@@ -45,7 +45,7 @@
           
             <div class="appeals__back"  @click="backToSearch"> <b-icon style="margin-right:5px" icon="backspace-fill"></b-icon>Назад</div>
        
-            <b-button  class="downloadAppeals" variant="primary" @click="downloadXlsx">Завантажити звернення</b-button>
+            <b-button  class="downloadAppeals" variant="primary" @click="downloadXlsx">Завантажити ВСІ звернення</b-button>
             <h5>Всього звернень: {{this.rows}}</h5><br/>
             <b-pagination
               v-model="currentPage"
@@ -248,8 +248,11 @@ export default {
   display: flex;
   flex-direction: row;
   align-items: center;
+  margin-top: -70px;
+  width: 150px;
   cursor: pointer;
-  margin-bottom: 10px;
+  margin-bottom: 40px;
+  z-index: 10;
 }
 .downloadAppeals {
   width: 300px;

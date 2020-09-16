@@ -62,7 +62,7 @@ export default {
       try {
         e.preventDefault();
         this.wrong = false;
-        let ident = await this.$axios.post('/account/identification', {
+        await this.$axios.post('/account/identification', {
           phone: this.phone,
         });
         let pass = await this.$axios.post('/account/authentication', {
