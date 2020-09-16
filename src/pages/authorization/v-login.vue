@@ -65,25 +65,13 @@ export default {
         let ident = await this.$axios.post('/account/identification', {
           phone: this.phone,
         });
-        let value = ident.data.token.value;
-        let pass = await this.$axios.post(
-          '/account/authentication',
-          {
-            password: this.password,
-            smscode: this.smsCode,
-          },
-          {
-            headers: {
-              'x-access-token': value,
-            },
-          }
-        );
+        let pass = await this.$axios.post('/account/authentication', {
+          password: this.password,
+          smscode: this.smsCode,
+        });
         if (!pass.data.authenticated) {
           this.wrongPass = true;
         } else {
-          this.$axios.defaults.headers.common['x-access-token'] =
-            pass.data.token.value;
-
           this.reset();
           this.$router.push({ path: '/' });
         }

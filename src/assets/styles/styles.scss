@@ -1,8 +1,6 @@
-*{
-    margin:0;
-    padding:0;
-}
+
 html{
+    background: white;
     @media screen and (min-width: 1000px) {
         font-size:14px;
         .margin-back{
@@ -48,6 +46,9 @@ $color: blue;
 $redColor: #ff4917;
 $blueColor:#0066cc;
 
+.app{
+    background: white;
+}
 .v-main-wrapper {
     width: 100%;
     min-height: 100vh;
@@ -67,4 +68,8 @@ $blueColor:#0066cc;
     margin-top:1%;
     margin-right:2%;
     margin-left:auto;
+}
+
+.card {
+    padding:10px;
 }
