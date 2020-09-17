@@ -55,6 +55,13 @@
               style="justify-content:center; margin-bottom:20px"
             ></b-pagination>
             <appeal-card   :partiesArr="parties" :politicianArr="politicians" :currentPage="newPage" :appeals="appeals"/>
+             <b-pagination
+              v-model="currentPage"
+              :total-rows="rows"
+              :per-page="perPage"
+              aria-controls="my-table"
+              style="justify-content:center; margin-bottom:20px"
+            ></b-pagination>
         </div>
         
     </div>

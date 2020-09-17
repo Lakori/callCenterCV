@@ -5,13 +5,10 @@
             v-for="(item, index) in mainAppeals"
             :key="item.id"
             class="appeals-card">
-            <b-card
-                :header="item.topic"
-                header-tag="header"
-                :footer="item.status"
-                footer-tag="footer"
-                
-                >
+            <b-card>
+                <template v-slot:header>
+                  <b><h5>{{item.topic}}</h5></b>
+                </template>
                 <b-card-text>
                     <h5>{{item.voterSurname}} {{item.voterName}} {{item.voterPhone}}</h5><br/>
                     <h6><b>Адресат політик:</b> {{item.politicianName || 'не знайдено'}}</h6>
@@ -22,10 +19,13 @@
                     </div>
                     <div v-else> {{item.content}}</div>
                     <div class="img__container" v-if="item.image">
-                      <img :src="item.image">
-                      <b-button variant="primary" @click.prevent="downloadImg(item.appealId)" class="img__download">Завантажити зображення</b-button>
+                      <a target="_blank" :href="item.image"><img :src="item.image"></a>
+                     <a target="_blank" :href="item.image" download> Завантажити </a>
                     </div>
                 </b-card-text>
+                <template v-slot:footer>
+                  <b class="greenStatus" :class="{newStatus: item.status === 'new'}">{{itemStatus(item.status)}}</b>
+                </template>
             </b-card>
         </b-card-group>
     </div>
@@ -42,6 +42,12 @@ export default {
       fullInfo: false,
       check: null,
       bigImg: false,
+      statuses: {
+        new: 'Нове звернення',
+        moderate: 'Звернення опубліковано',
+        sendForClarification: 'Звернення направлено на розгляд адресатові',
+        accepted: 'За зверненням розпочато перевірку',
+      },
     };
   },
   props: {
@@ -85,13 +91,19 @@ export default {
     await this.getAllInfo();
   },
   methods: {
-    async downloadImg(id) {
+    itemStatus(status) {
+      let ruStatus;
+      for (let key in this.statuses) {
+        status === key ? (ruStatus = this.statuses[key]) : null;
+      }
+      return ruStatus;
+    },
+    async downloadImg(img) {
       try {
-        let data = await this.$axios.get(`/appeals/${id}`);
         let link = document.createElement('a');
         link.target = '_blank';
         link.download = 'img.jpg';
-        link.href = `${data.data.image}`;
+        link.href = `${img}`;
         link.click();
       } catch (err) {
         console.log(err);
@@ -170,8 +182,7 @@ export default {
 
 .img__container {
   display: flex;
-  flex-direction: row;
-  align-items: center;
+  flex-direction: column;
   img {
     max-width: 30%;
     max-height: 150px;
@@ -194,6 +205,13 @@ export default {
 .more {
   color: blue;
   cursor: pointer;
+}
+
+.greenStatus {
+  color: green;
+}
+.newStatus {
+  color: red;
 }
 </style>
 
