@@ -94,6 +94,7 @@ export default {
   },
   watch: {
     async currentPage() {
+      this.appeals = [];
       let appealsArr = await this.searchByDate(this.deputyId);
       this.appeals = appealsArr;
       this.newPage = this.currentPage;
@@ -132,25 +133,38 @@ export default {
           this.deputyId = null;
         }
 
-        let appealsArr = await this.searchByDate(this.deputyId);
+        let appealsArr = await this.searchByDate(this.deputyId, 1);
         this.appeals = appealsArr;
         this.newPage = this.currentPage;
       } catch (err) {
         console.log(err);
       }
     },
-    async searchByDate(id) {
+    async searchByDate(id, i) {
       try {
         let conditionObj = {};
         this.noMatches = false;
-        let options = encodeURIComponent(
-          JSON.stringify({
-            page: {
-              index: this.currentPage - 1,
-              size: this.perPage,
-            },
-          })
-        );
+        let options;
+        if (i) {
+          options = encodeURIComponent(
+            JSON.stringify({
+              page: {
+                index: i - 1,
+                size: this.perPage,
+              },
+            })
+          );
+        } else {
+          options = encodeURIComponent(
+            JSON.stringify({
+              page: {
+                index: this.currentPage - 1,
+                size: this.perPage,
+              },
+            })
+          );
+        }
+
         if (this.fromDate && this.toDate) {
           conditionObj.createdAt = {
             $gte: this.fromDate,

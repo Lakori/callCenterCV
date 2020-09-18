@@ -53,6 +53,7 @@ export default {
     async logout() {
       try {
         await this.$axios.get('/auth/signout');
+        this.$axios.defaults.headers.common['x-access-token'] = null;
         this.$router.push({ path: '/login' });
       } catch (err) {
         console.log(err);

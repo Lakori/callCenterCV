@@ -21,7 +21,7 @@ Vue.use(VueMask);
 Vue.use(VueSweetalert2);
 
 Vue.prototype.$axios = axios.create({
-  baseURL: `${window.location.origin}${baseUrl()}`
+  baseURL: `${baseUrl()}`
 })
 
 // http://161.35.95.136:8877

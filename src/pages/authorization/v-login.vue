@@ -42,6 +42,8 @@
 </template>
 
 <script>
+import Config from '../../config/config.js';
+
 export default {
   data() {
     return {
@@ -62,16 +64,42 @@ export default {
       try {
         e.preventDefault();
         this.wrong = false;
-        await this.$axios.post('/account/identification', {
-          phone: this.phone,
-        });
-        let pass = await this.$axios.post('/account/authentication', {
-          password: this.password,
-          smscode: this.smsCode,
-        });
+        let pass;
+        if (Config.isLocal) {
+          let ident = await this.$axios.post('/account/identification', {
+            phone: this.phone,
+          });
+          this.value = ident.data.token.value;
+          pass = await this.$axios.post(
+            '/account/authentication',
+            {
+              password: this.password,
+              smscode: this.smsCode,
+            },
+            {
+              headers: {
+                'x-access-token': this.value,
+              },
+            }
+          );
+        } else {
+          await this.$axios.post('/account/identification', {
+            phone: this.phone,
+          });
+          pass = await this.$axios.post('/account/authentication', {
+            password: this.password,
+            smscode: this.smsCode,
+          });
+        }
+
         if (!pass.data.authenticated) {
           this.wrongPass = true;
         } else {
+          Config.isLocal
+            ? (this.$axios.defaults.headers.common['x-access-token'] =
+                pass.data.token.value)
+            : null;
+
           this.reset();
           this.$router.push({ path: '/' });
         }
