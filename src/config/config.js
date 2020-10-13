@@ -1,9 +1,9 @@
 export default {
 
     version: '/1.0.0',
-    url: 'http://161.35.95.136:8877',
+    url: window.location.origin,
     subDomain: '/api',
-    isLocal: true
+    isLocal: false
 }
 
 // http://161.35.95.136:8877

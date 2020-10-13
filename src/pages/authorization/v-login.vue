@@ -65,7 +65,9 @@ export default {
         e.preventDefault();
         this.wrong = false;
         let pass;
+        this.$axios.defaults.headers.common['x-access-token'] = null;
         if (Config.isLocal) {
+          console.log('Локальное использование');
           let ident = await this.$axios.post('/account/identification', {
             phone: this.phone,
           });

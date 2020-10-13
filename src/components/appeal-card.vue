@@ -133,8 +133,16 @@ export default {
             });
           }
 
-          this.appeals[i].voterSurname = infoVoter.surname;
-          this.appeals[i].voterName = infoVoter.name;
+          infoVoter.surname
+            ? (this.appeals[i].voterSurname = infoVoter.surname)
+            : (this.appeals[i].voterSurname = 'фамілія не вказана');
+
+          // this.appeals[i].voterSurname = infoVoter.surname;
+          infoVoter.name
+            ? (this.appeals[i].voterName = infoVoter.name)
+            : (this.appeals[i].voterName = "ім'я не вказано");
+
+          // this.appeals[i].voterName = infoVoter.name;
           this.appeals[i].voterPhone = infoVoter.phone;
 
           this.appeals[i].contentPart = this.appeals[i].content
@@ -152,13 +160,20 @@ export default {
     async findVoter(id) {
       try {
         let data = await this.$axios.get(`/voters/${id}`);
-        return {
-          surname: data.data.fullName.surname || 'без фамилии',
-          name: data.data.fullName.name || '',
-          phone: data.data.phone,
-        };
+        if (data.data.fullName) {
+          return {
+            surname: data.data.fullName.surname || 'без фамилии',
+            name: data.data.fullName.name || '',
+            phone: data.data.phone,
+          };
+        } else {
+          return {
+            surname: '',
+            name: '',
+            phone: data.data.phone,
+          };
+        }
       } catch (err) {
-        console.log('nne');
         throw new Error(err);
       }
     },

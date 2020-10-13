@@ -82,7 +82,7 @@ export default {
       appeals: [],
       noDates: false,
       deputyId: null,
-      currentPage: 1,
+      currentPage: 0,
       perPage: 10,
       rows: null,
       newPage: null,
@@ -94,10 +94,11 @@ export default {
   },
   watch: {
     async currentPage() {
-      this.appeals = [];
-      let appealsArr = await this.searchByDate(this.deputyId);
-      this.appeals = appealsArr;
-      this.newPage = this.currentPage;
+      if (this.currentPage) {
+        let appealsArr = await this.searchByDate(this.deputyId);
+        this.appeals = appealsArr;
+        this.newPage = this.currentPage;
+      }
     },
   },
   async created() {
@@ -125,45 +126,30 @@ export default {
     },
     async search(e) {
       try {
-        this.appeals = [];
         e.preventDefault();
+        this.currentPage = 0;
         if (this.surname) {
           this.deputyId = await this.searchBySurname();
         } else {
           this.deputyId = null;
         }
-
-        let appealsArr = await this.searchByDate(this.deputyId, 1);
-        this.appeals = appealsArr;
-        this.newPage = this.currentPage;
+        this.currentPage = 1;
       } catch (err) {
         console.log(err);
       }
     },
-    async searchByDate(id, i) {
+    async searchByDate(id) {
       try {
         let conditionObj = {};
         this.noMatches = false;
-        let options;
-        if (i) {
-          options = encodeURIComponent(
-            JSON.stringify({
-              page: {
-                index: i - 1,
-                size: this.perPage,
-              },
-            })
-          );
-        } else {
-          options = encodeURIComponent(
-            JSON.stringify({
-              page: {
-                index: this.currentPage - 1,
-                size: this.perPage,
-              },
-            })
-          );
-        }
+        let options = encodeURIComponent(
+          JSON.stringify({
+            page: {
+              index: this.currentPage - 1,
+              size: this.perPage,
+            },
+          })
+        );
 
         if (this.fromDate && this.toDate) {
           conditionObj.createdAt = {
@@ -244,6 +230,8 @@ export default {
       this.toDate = null;
       this.appeals = [];
       this.noDates = false;
+      this.back = false;
+      this.currentPage = null;
     },
     newDate(e) {
       e.preventDefault();
