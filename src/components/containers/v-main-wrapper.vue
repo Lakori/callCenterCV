@@ -49,7 +49,7 @@ export default {
         await this.$axios.get('/account/signout');
         this.$router.push({ path: '/login' });
       } catch (err) {
-        console.log(err);
+        throw new Error(err);
       }
     },
   },

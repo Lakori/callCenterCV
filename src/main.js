@@ -24,9 +24,6 @@ Vue.prototype.$axios = axios.create({
   baseURL: `${baseUrl()}`
 })
 
-// http://161.35.95.136:8877
-//https://pryamamova.com
-// window.location.origin
 Vue.use(BootstrapVue)
 // Optionally install the BootstrapVue icon components plugin
 Vue.use(IconsPlugin)

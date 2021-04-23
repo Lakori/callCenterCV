@@ -154,7 +154,7 @@ export default {
         }
         this.loader = false;
       } catch (err) {
-        console.log(err);
+        throw new Error(err);
       }
     },
     async findVoter(id) {

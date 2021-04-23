@@ -34,8 +34,7 @@
 
       <b-button class="main-size" @click="checkPassword" variant="primary">Увійти</b-button>
 
-      <div style="color:red" v-if="wrong">Невірний номер</div>
-      <div style="color:red" v-if="wrongPass">Невірний код або пароль</div>
+      <div style="color:red" v-if="wrong">{{wrongMessage}}</div>
     </b-form>
   </div>
     </div>
@@ -51,8 +50,8 @@ export default {
       password: '',
       smsCode: '',
       wrong: false,
+      wrongMessage: '',
       value: '',
-      wrongPass: false,
     };
   },
   methods: {
@@ -95,7 +94,8 @@ export default {
         }
 
         if (!pass.data.authenticated) {
-          this.wrongPass = true;
+          this.wrong = true;
+          this.wrongMessage = 'Невірний номер або пароль';
         } else {
           Config.isLocal
             ? (this.$axios.defaults.headers.common['x-access-token'] =
@@ -106,7 +106,9 @@ export default {
           this.$router.push({ path: '/' });
         }
       } catch (err) {
-        console.log(err);
+        this.wrong = true;
+        this.wrongMessage = 'Доступ заборонено, спробуйте пiзнiше';
+        throw new Error(err);
       }
     },
     async toRegistrationPage(evt) {

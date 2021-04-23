@@ -7,16 +7,29 @@
             <form @submit.prevent="search">
                 <h3>Введить дані для пошуку </h3>
                 <br/>
-                <label>Введіть фамілію політика для пошука:</label>
-                
-                <div  class="center__container">
-                    <b-form-input list="my-list-id" class="item" v-model="surname"></b-form-input>
+                <div class="search__container">
+                  <div class="search__item">
+                    <label>Введіть фамілію політика для пошука:</label>
+                    <div  class="center__container">
+                    
+                      <b-form-input list="my-list-id" class="item" v-model="surname"></b-form-input>
 
-                      <datalist id="my-list-id">
-                        <option v-for="deputy in politicians" :key="deputy.id" >{{ deputy.fullName.surname }} {{deputy.fullName.name}}</option>
-                      </datalist>
+                        <datalist id="my-list-id">
+                          <option v-for="deputy in politicians" :key="deputy.id" >{{ deputy.fullName.surname }} {{deputy.fullName.name}}</option>
+                        </datalist>
+                    </div>
+                  </div>
+                  <h2>АБО</h2>
+                  <div class="search__item">
+                   <label>Введіть фамілію чи телефон користувача</label>
+                    <div  class="center__container">
+                  
+                      <b-input class="item" v-model="userData" placeholder="Номер повинен починатись з +380..."></b-input>
+                    </div> 
+                    <br/>
+                     <div v-if="noUser" class="noUser">Користувача не знайдено</div>
+                  </div>
                 </div>
-                <div v-if="noPolitician" class="noPolitician">Політика не знайдено</div>
                 <br/>
                 <div class="date">
                     <div class="item">
@@ -73,6 +86,7 @@ export default {
   data() {
     return {
       surname: '',
+      userData: '',
       politicians: [],
       parties: [],
       noPolitician: false,
@@ -82,11 +96,13 @@ export default {
       appeals: [],
       noDates: false,
       deputyId: null,
+      voterId: null,
       currentPage: 0,
       perPage: 10,
       rows: null,
       newPage: null,
       noMatches: false,
+      noUser: false,
     };
   },
   components: {
@@ -94,8 +110,12 @@ export default {
   },
   watch: {
     async currentPage() {
-      if (this.currentPage) {
+      if (this.currentPage && this.surname) {
         let appealsArr = await this.searchByDate(this.deputyId);
+        this.appeals = appealsArr;
+        this.newPage = this.currentPage;
+      } else if (this.currentPage && this.userData && !this.noUser) {
+        let appealsArr = await this.searchByDate(this.voterId);
         this.appeals = appealsArr;
         this.newPage = this.currentPage;
       }
@@ -112,7 +132,7 @@ export default {
         let data = await this.$axios.get('/deputies');
         this.politicians = data.data.page.data;
       } catch (err) {
-        console.log(err);
+        throw new Error(err);
       }
     },
     async getAllParties() {
@@ -121,21 +141,76 @@ export default {
         let data = await this.$axios.get('/political-parties');
         this.parties = data.data.page.data;
       } catch (err) {
-        console.log(err);
+        throw new Error(err);
       }
     },
     async search(e) {
       try {
         e.preventDefault();
         this.currentPage = 0;
+        this.noUser = false;
         if (this.surname) {
+          this.voterId = null;
           this.deputyId = await this.searchBySurname();
+          if (this.deputyId) {
+            this.currentPage = 1;
+          }
+        } else if (this.userData) {
+          this.deputyId = null;
+          this.userData.includes(0)
+            ? (this.voterId = await this.searchUserMob())
+            : (this.voterId = await this.searchUserData());
+
+          if (this.voterId) {
+            this.currentPage = 1;
+          }
         } else {
+          this.voterId = null;
           this.deputyId = null;
         }
-        this.currentPage = 1;
       } catch (err) {
-        console.log(err);
+        throw new Error(err);
+      }
+    },
+    async searchUserMob() {
+      try {
+        let conditions = encodeURIComponent(
+          JSON.stringify({
+            phone: this.userData,
+          })
+        );
+        let data = await this.$axios.get(`voters?conditions=${conditions}`);
+
+        if (data.data.totalItems) {
+          return data.data.page.data[0].voterId;
+        } else {
+          this.noUser = true;
+          this.currentPage = 0;
+          return null;
+        }
+      } catch (err) {
+        throw new Error(err);
+      }
+    },
+    async searchUserData() {
+      try {
+        let conditions = encodeURIComponent(
+          JSON.stringify({
+            fullName: {
+              surname: this.userData,
+            },
+          })
+        );
+        let data = await this.$axios.get(`voters?conditions=${conditions}`);
+        if (data.data.totalItems) {
+          return data.data.page.data[0].voterId;
+        } else {
+          this.noUser = true;
+          this.currentPage = 0;
+          return null;
+        }
+      } catch (err) {
+        throw new Error(err);
       }
     },
     async searchByDate(id) {
@@ -157,8 +232,10 @@ export default {
             $lte: this.toDate,
           };
         }
-        if (id) {
+        if (id && this.deputyId) {
           conditionObj.deputyId = id;
+        } else if (id && this.voterId) {
+          conditionObj.voterId = id;
         }
         let conditions = encodeURIComponent(JSON.stringify(conditionObj));
         let data = await this.$axios.get(
@@ -168,7 +245,7 @@ export default {
         this.noMatches = data.data.totalItems > 0 ? false : true;
         return data.data.page.data;
       } catch (err) {
-        console.log(err);
+        throw new Error(err);
       }
     },
     async searchBySurname() {
@@ -187,7 +264,7 @@ export default {
           return data.data.page.data[0].deputyId;
         }
       } catch (err) {
-        console.log(err);
+        throw new Error(err);
       }
     },
     async downloadXlsx() {
@@ -201,6 +278,8 @@ export default {
         }
         if (this.deputyId && this.deputyId !== 'політика не знайдено') {
           conditionObj.deputyId = this.deputyId;
+        } else if (this.voterId) {
+          conditionObj.voterId = this.voterId;
         }
         let conditions = encodeURIComponent(JSON.stringify(conditionObj));
         let data = await this.$axios.get(
@@ -216,7 +295,7 @@ export default {
 
         fileLink.click();
       } catch (err) {
-        console.log(err);
+        throw new Error(err);
       }
     },
 
@@ -225,6 +304,7 @@ export default {
       this.surname = '';
       this.politician = [];
       this.noPolitician = false;
+      this.noUser = false;
       this.name = '';
       this.fromDate = null;
       this.toDate = null;
@@ -232,6 +312,8 @@ export default {
       this.noDates = false;
       this.back = false;
       this.currentPage = null;
+      this.voterId = null;
+      this.userData = null;
     },
     newDate(e) {
       e.preventDefault();
@@ -243,14 +325,28 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.search__container {
+  display: flex;
+  flex-direction: row;
+
+  h2 {
+    color: #007bff;
+    margin-right: 20px;
+    margin-left: 10px;
+  }
+}
+
+.search__item {
+  width: 40%;
+}
 .center__container {
   display: flex;
   flex-direction: row;
 }
 
 .item {
-  width: 40%;
-  margin-right: 3%;
+  width: 100%;
+  margin-right: 5%;
 }
 
 .appeals__back {
@@ -274,7 +370,8 @@ export default {
   align-items: center;
 }
 
-.noPolitician {
+.noPolitician,
+.noUser {
   color: red;
   margin-top: -10px;
   margin-bottom: 10px;
